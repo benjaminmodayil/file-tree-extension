@@ -2,11 +2,11 @@
   "name": "filetree-generator",
   "displayName": "File Tree to Text",
   "description": "Generate text representation of folder structure",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "publisher": "modayilme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YourUsername/filetree-generator"
+    "url": "https://github.com/benjaminmodayil/file-tree-extension/issues"
   },
   "license": "MIT",
   "keywords": [
