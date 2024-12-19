@@ -1,6 +1,6 @@
 {
   "name": "filetree-generator",
-  "displayName": "File Tree Generator",
+  "displayName": "File Tree to Text",
   "description": "Generate text representation of folder structure",
   "version": "0.0.1",
   "publisher": "modayilme",
@@ -79,7 +79,7 @@
     "theme": "dark"
   },
   "bugs": {
-    "url": "https://github.com/YourUsername/filetree-generator/issues"
+    "url": "https://github.com/benjaminmodayil/file-tree-extension/issues"
   },
-  "homepage": "https://github.com/YourUsername/filetree-generator#readme"
+  "homepage": "https://github.com/benjaminmodayil/file-tree-extension#readme"
 }
