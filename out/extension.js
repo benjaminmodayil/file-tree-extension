@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.activate = void 0;
+exports.deactivate = exports.generateFileTree = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -40,9 +40,17 @@ function activate(context) {
             const options = {
                 ignoredPatterns: [...new Set([...defaultPatterns, ...configuredPatterns])],
                 maxDepth: config.get('maxDepth', 10),
+                includeMarkdown: config.get('includeMarkdown', false),
             };
             const treeContent = await generateFileTree(uri.fsPath, '', 0, options);
-            await vscode.env.clipboard.writeText(treeContent);
+            let finalContent = treeContent;
+            if (options.includeMarkdown) {
+                const ignoredPatternsText = options.ignoredPatterns
+                    .map((p) => `"${p}"`)
+                    .join(', ');
+                finalContent = `Below is a generated filetree. Files within patterns ${ignoredPatternsText} are ignored.\n\n\`\`\`\n${treeContent}\`\`\``;
+            }
+            await vscode.env.clipboard.writeText(finalContent);
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: 'File tree copied to clipboard!',
@@ -69,7 +77,11 @@ async function generateFileTree(rootPath, prefix = '', depth = 0, options) {
     }
     let output = '';
     const files = await fs.promises.readdir(rootPath);
-    const filteredFiles = files.filter((file) => !options.ignoredPatterns.includes(file));
+    const filteredFiles = files.filter((file) => {
+        const fullPath = path.join(rootPath, file);
+        const isDirectory = fs.statSync(fullPath).isDirectory();
+        return !(!isDirectory && options.ignoredPatterns.includes(file));
+    });
     for (let i = 0; i < filteredFiles.length; i++) {
         const file = filteredFiles[i];
         const fullPath = path.join(rootPath, file);
@@ -78,12 +90,15 @@ async function generateFileTree(rootPath, prefix = '', depth = 0, options) {
         const branchSymbol = isLast ? '└── ' : '├── ';
         output += `${prefix}${branchSymbol}${file}\n`;
         if (stats.isDirectory()) {
-            const newPrefix = prefix + (isLast ? '    ' : '│   ');
-            output += await generateFileTree(fullPath, newPrefix, depth + 1, options);
+            if (!options.ignoredPatterns.includes(file)) {
+                const newPrefix = prefix + (isLast ? '    ' : '│   ');
+                output += await generateFileTree(fullPath, newPrefix, depth + 1, options);
+            }
         }
     }
     return output;
 }
+exports.generateFileTree = generateFileTree;
 function deactivate() { }
 exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map

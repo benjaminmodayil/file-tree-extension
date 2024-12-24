@@ -5,6 +5,7 @@ import * as path from 'path';
 interface TreeOptions {
   ignoredPatterns: string[];
   maxDepth: number;
+  includeMarkdown: boolean;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -26,10 +27,18 @@ export function activate(context: vscode.ExtensionContext) {
         const options: TreeOptions = {
           ignoredPatterns: [...new Set([...defaultPatterns, ...configuredPatterns])],
           maxDepth: config.get<number>('maxDepth', 10),
+          includeMarkdown: config.get<boolean>('includeMarkdown', false),
         };
 
         const treeContent = await generateFileTree(uri.fsPath, '', 0, options);
-        await vscode.env.clipboard.writeText(treeContent);
+        let finalContent = treeContent;
+        if (options.includeMarkdown) {
+          const ignoredPatternsText = options.ignoredPatterns
+            .map((p) => `"${p}"`)
+            .join(', ');
+          finalContent = `Below is a generated filetree. Files within patterns ${ignoredPatternsText} are ignored.\n\n\`\`\`\n${treeContent}\`\`\``;
+        }
+        await vscode.env.clipboard.writeText(finalContent);
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -55,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
-async function generateFileTree(
+export async function generateFileTree(
   rootPath: string,
   prefix: string = '',
   depth: number = 0,
@@ -67,7 +76,11 @@ async function generateFileTree(
 
   let output = '';
   const files = await fs.promises.readdir(rootPath);
-  const filteredFiles = files.filter((file) => !options.ignoredPatterns.includes(file));
+  const filteredFiles = files.filter((file) => {
+    const fullPath = path.join(rootPath, file);
+    const isDirectory = fs.statSync(fullPath).isDirectory();
+    return !(!isDirectory && options.ignoredPatterns.includes(file));
+  });
 
   for (let i = 0; i < filteredFiles.length; i++) {
     const file = filteredFiles[i];
@@ -79,8 +92,10 @@ async function generateFileTree(
     output += `${prefix}${branchSymbol}${file}\n`;
 
     if (stats.isDirectory()) {
-      const newPrefix = prefix + (isLast ? '    ' : '│   ');
-      output += await generateFileTree(fullPath, newPrefix, depth + 1, options);
+      if (!options.ignoredPatterns.includes(file)) {
+        const newPrefix = prefix + (isLast ? '    ' : '│   ');
+        output += await generateFileTree(fullPath, newPrefix, depth + 1, options);
+      }
     }
   }
 
