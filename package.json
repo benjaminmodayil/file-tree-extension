@@ -20,6 +20,7 @@
   "categories": [
     "Other"
   ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -63,6 +64,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
+    "publish": "vsce publish",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
